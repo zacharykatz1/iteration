@@ -83,3 +83,208 @@ z_scores(mtcars)
 # Should work
 z_scores(y_vec)
 ```
+
+## Multiple outputs
+
+```{r}
+mean_and_sd = function(x) {
+      
+      if(!is.numeric(x)) {
+            stop("x needs to be numeric")
+      }
+      
+      if(length(x) < 3) {
+            stop("x should have at least 3 numbers")
+      }
+      
+      mean_x = mean(x)
+      sd_x = sd(x)
+      
+      output_df = 
+            tibble(
+                  mean = mean_x,
+                  sd = sd_x
+            )
+      
+      return(output_df)
+}
+
+mean_and_sd(x_vec)
+mean_and_sd(y_vec)
+```
+
+
+## Different sample sizes, means, sds
+
+```{r}
+sim_data = 
+            tibble(
+                  x = rnorm(n = 30, mean = 5, sd = 4)
+            )
+      
+      sim_data %>% 
+            summarize(
+                  mean = mean(x),
+                  sd = sd(x)
+            )
+```
+
+
+Let's write a function that simulates data, computes the mean and sd.
+
+```{r}
+sim_mean_sd = function(n, mu, sigma) {
+      
+      # do checks on input
+      
+      sim_data = 
+            tibble(
+                  x = rnorm(n, mean = mu, sd = sigma)
+            )
+      
+      sim_data %>% 
+            summarize(
+                  mean = mean(x),
+                  sd = sd(x)
+            )
+}
+
+sim_mean_sd(10000, 40, 3)
+
+# Can set defaults
+sim_mean_sd = function(n, mu = 5, sigma = 4) {
+      
+      # do checks on input
+      
+      sim_data = 
+            tibble(
+                  x = rnorm(n, mean = mu, sd = sigma)
+            )
+      
+      sim_data %>% 
+            summarize(
+                  mean = mean(x),
+                  sd = sd(x)
+            )
+}
+
+sim_mean_sd(10000)
+
+# Can also enter arguments out of order when named
+sim_mean_sd(sigma = 5, mu = 4, n=10000)
+```
+
+## Revisit Napoleon Dynamite
+
+```{r}
+url = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber=1"
+
+dynamite_html = read_html(url)
+
+review_titles = 
+  dynamite_html %>%
+  html_elements(".a-text-bold span") %>%
+  html_text()
+
+review_stars = 
+  dynamite_html %>%
+  html_elements("#cm_cr-review_list .review-rating") %>%
+  html_text()
+
+review_text = 
+  dynamite_html %>%
+  html_elements(".review-text-content span") %>%
+  html_text()
+
+reviews = tibble(
+  title = review_titles,
+  stars = review_stars,
+  text = review_text
+)
+
+```
+
+Okay, but there are lots of pages of reviews...
+
+Let's write a function that gets reviews based on page URL.
+
+```{r}
+get_page_reviews = function(page_url) {
+  
+  page_html = read_html(page_url)
+
+  review_titles = 
+    page_html %>%
+    html_elements(".a-text-bold span") %>%
+    html_text()
+  
+  review_stars = 
+    page_html %>%
+    html_elements("#cm_cr-review_list .review-rating") %>%
+    html_text()
+  
+  review_text = 
+    page_html %>%
+    html_elements(".review-text-content span") %>%
+    html_text()
+  
+  reviews = tibble(
+    title = review_titles,
+    stars = review_stars,
+    text = review_text
+)
+  
+  return(reviews)
+}
+
+
+url1 = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber=1"
+url2 = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber=2"
+get_page_reviews(url1)
+get_page_reviews(url2)
+
+base_url = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
+
+urls = str_c(base_url, 1:5)
+
+bind_rows(
+  get_page_reviews(urls[1]),
+  get_page_reviews(urls[2]),
+  get_page_reviews(urls[3]),
+  get_page_reviews(urls[4]),
+  get_page_reviews(urls[5])
+)
+```
+
+NOTE: on website, check out LOTR example.
+
+You can also pass in a summary function as an argument:
+
+```{r}
+x_vec = rnorm(25, 0, 1)
+
+my_summary = function(x, summ_func) {
+  summ_func(x)
+}
+
+my_summary(x_vec, sd)
+```
+
+This could be particularly valuable for re-ordering.
+
+Remember, too, that scoping can be complicated:
+
+```{r}
+f = function(x) {
+  z = x + y
+  z
+}
+
+x = 1
+y = 2
+
+f(x = y)
+```
+
+
+

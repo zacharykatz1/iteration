@@ -184,21 +184,21 @@ z_scores = function(x) {
 }
 
 z_scores(x = x_vec)</code></pre>
-<pre><code>##  [1]  0.02876569  0.81909396 -0.64625203  0.07967885 -0.17688475 -0.66097064
-##  [7]  0.34812439  0.29312457 -0.02705890  0.31422404 -0.36741815  1.40311033
-## [13] -0.20334389  1.55600920 -1.81245448  0.05122645 -0.17092181 -2.73926228
-## [19]  0.13647609  1.33968643 -0.12004691  1.97988838 -0.92293114 -0.15763196
-## [25] -0.34423144</code></pre>
+<pre><code>##  [1] -1.16454695 -2.20930710 -0.92767913  1.26287507 -0.20102803 -1.86585321
+##  [7]  1.56987169 -0.46812175  1.55576475 -0.38925981  0.42530417  0.56252898
+## [13]  1.08097237 -0.51972539  0.46918997  1.17633853 -0.04623254  0.34713525
+## [19]  0.22325195 -0.53425066  0.01569180 -1.28711111 -0.16746894  0.19128488
+## [25]  0.90037519</code></pre>
 <pre class="r"><code>y_vec = rnorm(40, mean = 12, sd = .3)
 
 z_scores(y_vec)</code></pre>
-<pre><code>##  [1]  0.54373496  1.00194099  0.90136045 -1.29783698 -1.56818828 -0.30051115
-##  [7] -1.09902878 -1.32559805 -0.37461590  1.15967048 -1.58112512  0.68367146
-## [13]  1.09370128  0.04054737  1.35492780 -1.31849625 -0.20486387  1.57336517
-## [19]  0.80249088  1.21814311 -0.49532359 -1.44723633  0.12286916 -0.30579374
-## [25] -1.04541741 -0.66863450 -1.10548736  0.03027819 -0.27558297  0.69004271
-## [31] -0.33809670 -1.08238755  0.07429670  0.03680591  2.04169017 -0.23726629
-## [37]  0.12490586  0.96529615 -0.26458031  1.87633231</code></pre>
+<pre><code>##  [1] -0.75321936  0.45689445  0.60991766 -1.41584900  0.21289498 -0.21502443
+##  [7] -0.73269252 -1.17875039 -1.20885754  0.24389757  0.25345603  1.22813404
+## [13]  0.93383925  2.27858286 -1.72798088  1.11613787  1.49754804 -0.20217230
+## [19] -1.03581552  0.25366085 -0.50290525  1.63024563  0.93404297  1.88141218
+## [25] -0.36131617 -0.16880356 -1.14894895  0.30890487 -0.01588499 -0.14370139
+## [31]  0.07036887 -1.04942638 -0.59915253 -1.33342968  0.72507255  0.57099868
+## [37] -0.76429073 -0.96922728  1.26324889 -0.94180943</code></pre>
 <p>How great is this?</p>
 <pre class="r"><code>z_scores(3)</code></pre>
 <pre><code>## [1] NA</code></pre>
@@ -229,13 +229,115 @@ z_scores(mtcars)</code></pre>
 <pre><code>## Error in z_scores(mtcars): x needs to be numeric</code></pre>
 <pre class="r"><code># Should work
 z_scores(y_vec)</code></pre>
-<pre><code>##  [1]  0.54373496  1.00194099  0.90136045 -1.29783698 -1.56818828 -0.30051115
-##  [7] -1.09902878 -1.32559805 -0.37461590  1.15967048 -1.58112512  0.68367146
-## [13]  1.09370128  0.04054737  1.35492780 -1.31849625 -0.20486387  1.57336517
-## [19]  0.80249088  1.21814311 -0.49532359 -1.44723633  0.12286916 -0.30579374
-## [25] -1.04541741 -0.66863450 -1.10548736  0.03027819 -0.27558297  0.69004271
-## [31] -0.33809670 -1.08238755  0.07429670  0.03680591  2.04169017 -0.23726629
-## [37]  0.12490586  0.96529615 -0.26458031  1.87633231</code></pre>
+<pre><code>##  [1] -0.75321936  0.45689445  0.60991766 -1.41584900  0.21289498 -0.21502443
+##  [7] -0.73269252 -1.17875039 -1.20885754  0.24389757  0.25345603  1.22813404
+## [13]  0.93383925  2.27858286 -1.72798088  1.11613787  1.49754804 -0.20217230
+## [19] -1.03581552  0.25366085 -0.50290525  1.63024563  0.93404297  1.88141218
+## [25] -0.36131617 -0.16880356 -1.14894895  0.30890487 -0.01588499 -0.14370139
+## [31]  0.07036887 -1.04942638 -0.59915253 -1.33342968  0.72507255  0.57099868
+## [37] -0.76429073 -0.96922728  1.26324889 -0.94180943</code></pre>
+</div>
+<div id="multiple-outputs" class="section level2">
+<h2>Multiple outputs</h2>
+<pre class="r"><code>mean_and_sd = function(x) {
+      
+      if(!is.numeric(x)) {
+            stop(&quot;x needs to be numeric&quot;)
+      }
+      
+      if(length(x) &lt; 3) {
+            stop(&quot;x should have at least 3 numbers&quot;)
+      }
+      
+      mean_x = mean(x)
+      sd_x = sd(x)
+      
+      output_df = 
+            tibble(
+                  mean = mean_x,
+                  sd = sd_x
+            )
+      
+      return(output_df)
+}
+
+mean_and_sd(x_vec)</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##    mean    sd
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1  4.91  3.99</code></pre>
+<pre class="r"><code>mean_and_sd(y_vec)</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##    mean    sd
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1  12.0 0.279</code></pre>
+</div>
+<div id="different-sample-sizes-means-sds" class="section level2">
+<h2>Different sample sizes, means, sds</h2>
+<pre class="r"><code>sim_data = 
+            tibble(
+                  x = rnorm(n = 30, mean = 5, sd = 4)
+            )
+      
+      sim_data %&gt;% 
+            summarize(
+                  mean = mean(x),
+                  sd = sd(x)
+            )</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##    mean    sd
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1  5.99  4.12</code></pre>
+<p>Let’s write a function that simulates data, computes the mean and sd.</p>
+<pre class="r"><code>sim_mean_sd = function(n, mu, sigma) {
+      
+      # do checks on input
+      
+      sim_data = 
+            tibble(
+                  x = rnorm(n, mean = mu, sd = sigma)
+            )
+      
+      sim_data %&gt;% 
+            summarize(
+                  mean = mean(x),
+                  sd = sd(x)
+            )
+}
+
+sim_mean_sd(10000, 40, 3)</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##    mean    sd
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1  40.0  2.96</code></pre>
+<pre class="r"><code># Can set defaults
+sim_mean_sd = function(n, mu = 5, sigma = 4) {
+      
+      # do checks on input
+      
+      sim_data = 
+            tibble(
+                  x = rnorm(n, mean = mu, sd = sigma)
+            )
+      
+      sim_data %&gt;% 
+            summarize(
+                  mean = mean(x),
+                  sd = sd(x)
+            )
+}
+
+sim_mean_sd(10000)</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##    mean    sd
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1  5.04  4.00</code></pre>
+<pre class="r"><code># Can also enter arguments out of order when named
+sim_mean_sd(sigma = 5, mu = 4, n=10000)</code></pre>
+<pre><code>## # A tibble: 1 × 2
+##    mean    sd
+##   &lt;dbl&gt; &lt;dbl&gt;
+## 1  4.07  5.02</code></pre>
 </div>
 
 
