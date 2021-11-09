@@ -1,0 +1,286 @@
+---
+title: "Iteration and Listcols"
+author: 'Zachary Katz (UNI: zak2132)'
+date: "11/9/2021"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+library(rvest)
+library(p8105.datasets)
+
+knitr::opts_chunk$set(
+  fig.width = 6,
+  fig.asp = .6,
+  out.width = "90%"
+)
+
+theme_set(theme_minimal() + theme(legend.position = "bottom"))
+
+options(
+  ggplot2.continuous.colour = "viridis",
+  ggplot2.continuous.fill = "viridis"
+)
+
+scale_colour_discrete = scale_colour_viridis_d
+scale_fill_discrete = scale_fill_viridis_d
+```
+
+## Define functions
+
+```{r}
+mean_and_sd = function(x) {
+  
+  if (!is.numeric(x)) {
+    stop("Argument x should be numeric")
+  } else if (length(x) == 1) {
+    stop("Cannot be computed for length 1 vectors")
+  }
+  
+  mean_x = mean(x)
+  sd_x = sd(x)
+
+  tibble(
+    mean = mean_x, 
+    sd = sd_x
+  )
+}
+```
+
+
+## Lists
+
+```{r}
+l = 
+  list(
+      vec_numeric = 5:8,
+      vec_logical = c(TRUE, FALSE),
+      summary = summary(rnorm(1000, mean = 5, sd = 3))
+)
+
+l[[1]]
+l[[2]]
+l[[3]]
+
+l[["summary"]]
+```
+
+## List of normals
+
+```{r}
+list_norms = 
+  list(
+    a = rnorm(20, 3, 1),
+    b = rnorm(20, 0, 5),
+    c = rnorm(20, 10, .2),
+    d = rnorm(20, -3, 1)
+  )
+
+mean_and_sd(list_norms[[1]])
+mean_and_sd(list_norms[[2]])
+mean_and_sd(list_norms[[3]])
+mean_and_sd(list_norms[[4]])
+```
+
+## For loop
+
+Let's use a for loop to iterate over my list of normals.
+
+```{r}
+# Create empty output list
+output = vector("list", length = 4)
+
+# I could in theory save each result one at a time to output elements, but this is not efficient
+output[[1]] = mean_and_sd(list_norms[[1]])
+
+# For loop instead
+for (i in 1:4) {
+  
+  output[[i]] = mean_and_sd(list_norms[[i]])
+                             
+}
+
+output
+
+```
+
+Let's use map instead:
+
+```{r}
+# Much clearer
+output = map(list_norms, mean_and_sd)
+output
+
+# Suppose I want the summary stats instead
+output = map(list_norms, summary)
+output
+
+# Or IQR only
+output = map(list_norms, IQR)
+output
+
+# Return just median, collapsed into a nicer structure
+output = map_dbl(list_norms, median)
+output
+```
+
+## List columns
+
+```{r}
+listcol_df = 
+  tibble(
+    name = c("a", "b", "c", "d"),
+    norms = list_norms
+  )
+
+# Can still do normal df stuff; weird column, but still just a data frame
+listcol_df %>% 
+  filter(name == "a")
+
+# Can still do normal df stuff; weird column, but still just a data frame
+listcol_df %>% pull(name)
+listcol_df %>% pull(norms)
+
+# Create new column in same df containing mean and sd
+listcol_df %>% 
+  mutate(
+    summaries = map(norms, mean_and_sd)
+  )
+```
+
+## Nested data
+
+```{r}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728", "USC00519397", "USS0023B17S"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(
+      id, 
+      USW00094728 = "CentralPark_NY", 
+      USC00519397 = "Waikiki_HA",
+      USS0023B17S = "Waterhole_WA"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+
+weather_df
+```
+
+Nest data within location:
+
+```{r}
+weather_nested = nest(weather_df, data = date:tmin)
+
+# Create three separate nested tibbles, one for each location
+weather_nested %>% 
+  pull(data)
+
+# Fit a regression to how tmax is related to tmin for Central Park
+lm(tmax ~ tmin, data = weather_nested$data[[1]])
+
+# Can also do for 2nd and 3rd locations
+lm(tmax ~ tmin, data = weather_nested$data[[2]])
+lm(tmax ~ tmin, data = weather_nested$data[[3]])
+
+# Write a quick function to fit linear regression
+weather_lm = function(df) {
+  
+  lm(tmax ~ tmin, data = df)
+  
+}
+
+# Check result
+weather_lm(weather_nested$data[[1]])
+
+# Let's iterate across locations instead:
+
+# Can take weather nested list of data sets and map across for each one applying weather_lm
+map(weather_nested$data, weather_lm)
+
+# Or could add column to existing df
+weather_nested %>% 
+  mutate(
+    lm_results = map(data, weather_lm)
+  )
+  
+```
+
+Note that we can also unnest:
+
+```{r}
+unnest(weather_nested, data)
+
+# Can use pipes as well for nesting/unnesting
+weather_nested %>% 
+  unnest(data)
+```
+
+## Napoleon again
+
+```{r}
+
+# Wrote this function last class to get reviews / stars
+read_page_reviews = function(url) {
+  
+  html = read_html(url)
+  
+  title = 
+    html %>%
+    html_nodes("#cm_cr-review_list .review-title") %>%
+    html_text()
+  
+  stars = 
+    html %>%
+    html_nodes("#cm_cr-review_list .review-rating") %>%
+    html_text() %>%
+    str_extract("\\d") %>%
+    as.numeric()
+  
+  text = 
+    html %>%
+    html_nodes(".review-data:nth-child(5)") %>%
+    html_text()
+  
+  tibble(title, stars, text)
+}
+
+# Also last class read the five pages of reviews on the URLs
+url_base = "https://www.amazon.com/product-reviews/B00005JNBQ/ref=cm_cr_arp_d_viewopt_rvwer?ie=UTF8&reviewerType=avp_only_reviews&sortBy=recent&pageNumber="
+vec_urls = str_c(url_base, 1:5)
+```
+
+First, can define a vector of URLs to act as an input, and then iterate over that vector using both a for loop and a map_df statement.
+
+```{r}
+output = vector("list", 5)
+
+for (i in 1:5) {
+  output[[i]] = read_page_reviews(vec_urls[[i]])
+}
+
+dynamite_reviews = bind_rows(output)
+
+# Map function is much cleaner
+dynamite_reviews = map_df(vec_urls, read_page_reviews)
+```
+
+Can also do it this way to add to df containing original list of urls:
+
+```{r}
+dynamite_reviews = 
+  tibble(
+    page = 1:5,
+    urls = str_c(url_base, page)) %>% 
+  mutate(reviews = map(urls, read_page_reviews)) %>% 
+  unnest()
+
+dynamite_reviews
+```
+
